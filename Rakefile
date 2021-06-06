@@ -3,7 +3,7 @@
 require 'bundler/gem_tasks'
 
 require 'rspec/core/rake_task'
-RSpec::Core::RakeTask.new(:spec).tap do |rspec_task|
+RSpec::Core::RakeTask.new(:spec) do |rspec_task|
   rspec_task.pattern = './spec/unit{,/*/**}/*_spec.rb'
 end
 
