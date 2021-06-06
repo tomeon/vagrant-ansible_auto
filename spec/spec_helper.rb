@@ -9,10 +9,10 @@ type = if File.basename($PROGRAM_NAME) == 'vagrant-spec'
        end
 
 RSpec.configure do |config|
-  config.pattern = "#{type}/**/*_spec.rb"
-  config.color = true
-  config.formatter = 'documentation'
-  config.order = 'rand'
+  config.pattern    = "#{type}/**/*_spec.rb"
+  config.color      = true
+  config.formatter  = 'documentation'
+  config.order      = 'rand'
 end
 
 Pathname.new(__FILE__).tap do |helper|
