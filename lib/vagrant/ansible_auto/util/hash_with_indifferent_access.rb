@@ -6,7 +6,16 @@ module VagrantPlugins
   module AnsibleAuto
     # Helper methods for common operations
     module Util
-      # Helper methods for operations related to SSH keys
+      # Hash that automatically stringifies symbols or symbolifies strings if
+      # lookups using the string or symbol fail.
+      #
+      # @example
+      #
+      #   ihash = HashWithIndifferentAccess.new { foo: 'bar' }
+      #   ihash[:foo]
+      #     #=> 'bar'
+      #   ihash['foo']
+      #     #=> 'bar'
       class HashWithIndifferentAccess < Vagrant::Util::HashWithIndifferentAccess
         # Combine two hashes into a new hash
         # @overload merge(other)
