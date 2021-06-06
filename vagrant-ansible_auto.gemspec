@@ -7,8 +7,8 @@ require 'vagrant/ansible_auto/version'
 Gem::Specification.new do |spec|
   spec.name          = 'vagrant-ansible_auto'
   spec.version       = VagrantPlugins::AnsibleAuto::VERSION
-  spec.authors       = ['Ignacio Galindo']
-  spec.email         = ['joiggama@gmail.com']
+  spec.authors       = ['Ignacio Galindo', 'Matt Schreiber']
+  spec.email         = ['joiggama@gmail.com', 'tomeon@dogea.red']
   spec.summary       = 'Vagrant plugin for building ansible inventory files.'
   spec.description   = 'Helps defining and building ansible inventory files programatically via configuration and command modules.'
   spec.homepage      = 'https://github.com/joiggama/vagrant-ansible_auto'
