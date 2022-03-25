@@ -13,6 +13,14 @@ RuboCop::RakeTask.new
 require 'yard'
 YARD::Rake::YardocTask.new
 
+namespace :yard do
+  task :server do
+    desc 'Run the YARD documentation server'
+    require 'yard/cli/server'
+    YARD::CLI::Server.new.run('--reload')
+  end
+end
+
 desc 'Run vagrant-spec'
 namespace 'vagrant-spec' do
   desc 'Output vagrant-spec components'
