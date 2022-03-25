@@ -162,7 +162,7 @@ module VagrantPlugins
       def create_and_chown_remote_folder(path)
         machine.communicate.tap do |comm|
           comm.sudo("mkdir -p #{path}")
-          comm.sudo("chown -h #{machine.ssh_info[:username]} #{path}")
+          comm.sudo("chown -R -h #{machine.ssh_info[:username]} #{path}")
         end
       end
 
