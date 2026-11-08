@@ -236,6 +236,151 @@ describe VagrantPlugins::AnsibleAuto::Provisioner do
       end
     end
 
+    context 'given machines that have not been created' do
+      let(:vagrantfile_contents) do
+        <<-VAGRANTFILE
+          Vagrant.configure(2) do |config|
+            config.vm.box = 'base'
+            config.vm.define :machine1
+            config.vm.define :machine2 do |m|
+              m.vm.network :forwarded_port, guest: 80, host: 8080
+              m.vm.network :private_network, ip: '192.168.56.12'
+              m.vm.network :public_network, ip: '10.0.0.12'
+              m.ssh.username = 'admin'
+              m.ssh.guest_port = 2222
+            end
+            config.vm.define :machine3 do |m|
+              m.vm.network :private_network, type: 'dhcp'
+              m.vm.hostname = 'machine3.example.com'
+            end
+            config.vm.define :machine4
+            config.vm.define :machine5
+          end
+        VAGRANTFILE
+      end
+
+      let(:active_machines) { [machines[0], machines[3]] }
+      let(:inactive_machines) { [machines[1], machines[2], machines[4]] }
+
+      def inventory_hostnames
+        provisioner.config.inventory.hosts.map(&:inventory_hostname)
+      end
+
+      def inventory_host(name)
+        provisioner.config.inventory.hosts.find { |h| h.inventory_hostname == name.to_s }
+      end
+
+      before do
+        allow(machine.env).to receive(:active_machines).and_return(active_machines.map { |m| [m.name, :dummy] })
+      end
+
+      context 'by default' do
+        it 'omits them from the inventory', skip_after: true do
+          expect(machine.ui).not_to receive(:warn)
+          provisioner.provision
+          expect(inventory_hostnames).to eq %w[machine1 machine4]
+        end
+      end
+
+      context 'when include_inactive_machines is true' do
+        before do
+          config.include_inactive_machines = true
+        end
+
+        it 'adds all of them to the inventory after the active machines', skip_after: true do
+          provisioner.provision
+          expect(inventory_hostnames).to eq %w[machine1 machine4 machine2 machine3 machine5]
+        end
+
+        it 'uses a static IP address, preferring public networks', skip_after: true do
+          provisioner.provision
+          expect(inventory_host(:machine2).hostvars).to include(
+            'ansible_ssh_host' => '10.0.0.12',
+            'ansible_ssh_port' => 2222,
+            'ansible_ssh_user' => 'admin'
+          )
+          expect(inventory_host(:machine2).ansible_ssh_private_key_file).to be_nil
+        end
+
+        it 'falls back to the configured hostname', skip_after: true do
+          provisioner.provision
+          expect(inventory_host(:machine3).hostvars).to include(
+            'ansible_ssh_host' => 'machine3.example.com',
+            'ansible_ssh_port' => 22,
+            'ansible_ssh_user' => 'vagrant'
+          )
+        end
+
+        it 'falls back to the machine name', skip_after: true do
+          provisioner.provision
+          expect(inventory_host(:machine5).hostvars).to include('ansible_ssh_host' => 'machine5')
+        end
+
+        it 'writes them to the generated inventory' do
+          expect(machine.communicate).to receive(:upload) do |from, to|
+            contents = File.read(from)
+            expect(contents).to match(/^machine2 .*ansible_ssh_host=10\.0\.0\.12 ansible_ssh_port=2222 ansible_ssh_user=admin/)
+            expect(contents).to match(/^machine3 .*ansible_ssh_host=machine3\.example\.com/)
+          end
+        end
+
+        it 'does not wait for them to become reachable or configure SSH access to them' do
+          allow(provisioner).to receive(:wait_for_ssh_ready!).and_call_original
+          allow(provisioner).to receive(:configure_ssh_access!).and_call_original
+
+          inactive_machines.each do |m|
+            expect(provisioner).not_to receive(:wait_for_ssh_ready!).with(m, any_args)
+            expect(provisioner).not_to receive(:configure_ssh_access!).with(m, any_args)
+          end
+
+          expect(provisioner).to receive(:wait_for_ssh_ready!).with(machines[3], any_args)
+        end
+
+        it 'includes groups and variables from their configuration', skip_after: true do
+          machines[1].config.ansible.groups = { 'workers' => %w[machine2] }
+          machines[1].config.ansible.vars = { 'workers' => { 'role' => 'worker' } }
+          machines[1].config.ansible.finalize!
+
+          provisioner.provision
+
+          expect(provisioner.config.inventory.groups['workers']).to include('machine2')
+          expect(provisioner.config.inventory.vars['workers']).to include('role' => 'worker')
+        end
+      end
+
+      context 'when include_inactive_machines lists machine names' do
+        before do
+          config.include_inactive_machines = ['machine2', :machine5, 'machine4']
+        end
+
+        it 'adds only the listed machines to the inventory', skip_after: true do
+          provisioner.provision
+          expect(inventory_hostnames).to eq %w[machine1 machine4 machine2 machine5]
+        end
+      end
+
+      context 'when include_inactive_machines lists regular expressions' do
+        before do
+          config.include_inactive_machines = [/[35]\z/]
+        end
+
+        it 'adds only the matching machines to the inventory', skip_after: true do
+          provisioner.provision
+          expect(inventory_hostnames).to eq %w[machine1 machine4 machine3 machine5]
+        end
+      end
+
+      context 'when include_inactive_machines lists a machine that is not defined' do
+        before do
+          config.include_inactive_machines = %w[machine2 nonexistent]
+        end
+
+        it 'issues a warning' do
+          expect(machine.ui).to receive(:warn).with(/\AMachine nonexistent is listed in include_inactive_machines but is not defined/)
+        end
+      end
+    end
+
     context 'given a machine that is not configured for the current environment' do
       it 'carps and ignores the machine', skip_after: true do
         expect(logger).to receive(:warn).with(/\AMachine .*? not configured for this environment/).at_least(:once)

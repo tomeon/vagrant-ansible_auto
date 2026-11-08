@@ -38,9 +38,14 @@ module VagrantPlugins
 
         return super unless machine.guest.capability?(:ssh_server_address)
 
-        with_active_machines do |other, name, provider|
+        with_inventory_machines do |other, name, provider, active|
           if other.nil?
             @logger.warn I18n.t('vagrant.ansible_auto.provisioner.machine_not_configured', machine_name: name)
+          elsif !active
+            # Merge the other machine's configuration, with this machine's
+            # configuration taking precedence.
+            @config = other.config.ansible.merge(@config)
+            add_inactive_machine!(other, name)
           else
             if name == machine.name
               other_hostvars = { ansible_connection: 'local' }
@@ -207,17 +212,97 @@ module VagrantPlugins
         config.inventory.with_ini_lines_groups.to_a.join("\n") + "\n"
       end
 
-      def with_active_machines
+      # Yield each machine that should be considered for inclusion in the
+      # inventory: first every active machine (that is, every machine that has
+      # been created), then every inactive machine selected by the
+      # +include_inactive_machines+ option.
+      # @yieldparam [Vagrant::Machine, nil] other the machine, or +nil+ if it
+      #   could not be loaded
+      # @yieldparam [Symbol] name the machine's name
+      # @yieldparam [Symbol] provider the machine's provider
+      # @yieldparam [Boolean] active whether the machine is active
+      def with_inventory_machines
         return enum_for(__method__) unless block_given?
 
-        machine.env.active_machines.each do |name, provider|
-          begin
-            yield machine.env.machine(name, provider), name, provider
-          rescue Vagrant::Errors::MachineNotFound, CommunicatorWinRM::Errors::WinRMNotReady => e
-            @logger.warn I18n.t('vagrant.ansible_auto.provisioner.cannot_find_machine', machine_name: name, error_message: e.message)
-            yield nil, name, provider
+        active_machines = machine.env.active_machines
+
+        active_machines.each do |name, provider|
+          with_machine(name, provider) { |other| yield other, name, provider, true }
+        end
+
+        active_names = active_machines.map { |name, _provider| name.to_sym }
+
+        inactive_machine_names(active_names).each do |name|
+          # Vagrant expects all machines in an environment to share a
+          # provider, so load the inactive machine with the provider of the
+          # machine being provisioned.
+          provider = machine.provider_name
+          with_machine(name, provider) { |other| yield other, name, provider, false }
+        end
+      end
+
+      # Yield the named machine, or +nil+ if it cannot be found or is not
+      # ready.
+      def with_machine(name, provider)
+        yield machine.env.machine(name, provider)
+      rescue Vagrant::Errors::MachineNotFound, CommunicatorWinRM::Errors::WinRMNotReady => e
+        @logger.warn I18n.t('vagrant.ansible_auto.provisioner.cannot_find_machine', machine_name: name, error_message: e.message)
+        yield nil
+      end
+
+      # @param [Array<Symbol>] active_names the names of the active machines
+      # @return [Array<Symbol>] the names of the machines that are defined in
+      #   the Vagrantfile, are not active, and are selected by the
+      #   +include_inactive_machines+ option
+      def inactive_machine_names(active_names)
+        machine_names = machine.env.machine_names.map(&:to_sym)
+
+        warn_unknown_inactive_machines(machine_names)
+
+        (machine_names - active_names).select do |name|
+          @config.include_inactive_machine?(name)
+        end
+      end
+
+      def warn_unknown_inactive_machines(machine_names)
+        return unless @config.include_inactive_machines.is_a? Array
+
+        @config.include_inactive_machines.each do |pattern|
+          next if pattern.is_a?(Regexp) || machine_names.include?(pattern.to_sym)
+          machine.ui.warn I18n.t('vagrant.ansible_auto.provisioner.unknown_inactive_machine', machine_name: pattern)
+        end
+      end
+
+      # Add a machine that has not been created to the inventory.  Since the
+      # machine is not running, we cannot wait for it to accept SSH
+      # connections, ask the control machine how to reach it, or set up SSH
+      # keys for it.  Instead, we make a best-effort guess at its address from
+      # its configuration so that Ansible does not fall back to connecting to
+      # the default address (127.0.0.1), which is the control machine itself.
+      def add_inactive_machine!(other, name)
+        address = inactive_machine_address(other, name)
+
+        machine.ui.info I18n.t('vagrant.ansible_auto.provisioner.inactive_inventory_addition', machine_name: name, address: address)
+
+        @config.inventory.add_host(name.to_s,
+                                   ansible_ssh_host: address,
+                                   ansible_ssh_port: other.config.ssh.guest_port,
+                                   ansible_ssh_user: other.config.ssh.username)
+      end
+
+      # @return [String] the first static IP address assigned to a public or
+      #   private network in the machine's configuration; otherwise, the
+      #   machine's configured hostname; otherwise, the machine's name
+      def inactive_machine_address(other, name)
+        networks = other.config.vm.networks
+
+        %i[public_network private_network].each do |type|
+          networks.each do |network_type, options|
+            return options[:ip].to_s if network_type == type && options[:ip]
           end
         end
+
+        other.config.vm.hostname || name.to_s
       end
 
       # The machines we are trying to manage might not yet be ready to

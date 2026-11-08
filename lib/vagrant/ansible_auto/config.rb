@@ -16,7 +16,8 @@ module VagrantPlugins
       attr_accessor :inventory, :groups, :vars, :children,
                     :strict_host_key_checking, :host_connect_tries,
                     :host_connect_sleep, :insert_control_machine_public_key,
-                    :upload_inventory_host_private_keys
+                    :upload_inventory_host_private_keys,
+                    :include_inactive_machines
 
       protected(:inventory=)
 
@@ -34,6 +35,9 @@ module VagrantPlugins
         host_connect_sleep
       ].freeze
 
+      # Types permitted as elements of {#include_inactive_machines}
+      MACHINE_PATTERN = [String, Symbol, Regexp].freeze
+
       def initialize
         super
         @inventory                          = Inventory.new
@@ -45,6 +49,7 @@ module VagrantPlugins
         @host_connect_sleep                 = UNSET_VALUE
         @insert_control_machine_public_key  = UNSET_VALUE
         @upload_inventory_host_private_keys = UNSET_VALUE
+        @include_inactive_machines          = UNSET_VALUE
         @__errors = []
       end
 
@@ -62,6 +67,8 @@ module VagrantPlugins
         @host_connect_sleep                 = 2                                   if @host_connect_sleep                  == UNSET_VALUE
         @insert_control_machine_public_key  = true                                if @insert_control_machine_public_key   == UNSET_VALUE
         @upload_inventory_host_private_keys = !@insert_control_machine_public_key if @upload_inventory_host_private_keys  == UNSET_VALUE
+        @include_inactive_machines          = false                               if @include_inactive_machines           == UNSET_VALUE
+        @include_inactive_machines          = Array(@include_inactive_machines)   unless bool? @include_inactive_machines
 
         # NOTE @limit is defined in core Vagrant's Ansible config.
         @limit = '*' if @limit == UNSET_VALUE
@@ -96,7 +103,31 @@ module VagrantPlugins
           end
         end
 
+        unless machine_patterns? @include_inactive_machines
+          errors << 'include_inactive_machines must be true, false, or a list of machine names and/or regular expressions'
+        end
+
         { 'ansible_auto' => errors }
+      end
+
+      # Whether a machine that is not active (i.e. has not been created) should
+      # be added to the inventory, as determined by
+      # {#include_inactive_machines}.  +true+ selects all inactive machines,
+      # +false+ selects none, and a list of names and/or regular expressions
+      # selects the inactive machines whose names match any of its elements.
+      # @param [#to_s] name the name of a machine
+      # @return [Boolean] whether the machine should be added to the inventory
+      def include_inactive_machine?(name)
+        case include_inactive_machines
+        when true
+          true
+        when Array
+          include_inactive_machines.any? do |pattern|
+            pattern.is_a?(Regexp) ? pattern.match?(name.to_s) : pattern.to_s == name.to_s
+          end
+        else
+          false
+        end
       end
 
       # Merge two configurations
@@ -113,6 +144,12 @@ module VagrantPlugins
           result.children   = conditional_merge(children, other.children)
           result.inventory  = inventory.merge(other.inventory)
         end
+      end
+
+    private
+
+      def machine_patterns?(o)
+        bool?(o) || (o.is_a?(Array) && o.all? { |e| MACHINE_PATTERN.any? { |type| e.is_a? type } })
       end
     end
   end

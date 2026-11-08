@@ -5,6 +5,8 @@ en:
         machine_not_configured: 'Machine %{machine_name} is not configured for this environment; omitting it from the inventory'
         private_key_missing: 'Private key for %{machine_name} not available for upload; provisioner will likely fail'
         inventory_addition: 'Adding %{machine_name} to Ansible inventory'
+        inactive_inventory_addition: 'Adding inactive machine %{machine_name} to Ansible inventory with address %{address}; Ansible will not be able to connect to it until it is created'
+        unknown_inactive_machine: 'Machine %{machine_name} is listed in include_inactive_machines but is not defined in the Vagrantfile'
         public_key_authorized: 'Control machine public key already authorized on %{machine_name}'
         inserting_public_key: 'Inserting control machine public key on %{machine_name}'
         cannot_insert_public_key: 'Cannot insert control machine public key on %{machine_name}'
