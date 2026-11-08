@@ -1,4 +1,3 @@
-require 'coveralls'
 require 'simplecov'
 
 require 'vagrant/ansible_auto'
@@ -29,18 +28,9 @@ end
 
 if ENV.key? 'SIMPLECOV_VAGRANT_ANSIBLE_AUTO_COMMAND_NAME'
   SimpleCov.command_name ENV['SIMPLECOV_VAGRANT_ANSIBLE_AUTO_COMMAND_NAME']
-
-  Coveralls::Output.silent = true
-
-  SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter.new([
-    SimpleCov::Formatter::SilentHTMLFormatter,
-    Coveralls::SimpleCov::Formatter,
-  ])
+  SimpleCov.formatter = SimpleCov::Formatter::SilentHTMLFormatter
 
   SimpleCov.start
 else
-  SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter.new([
-    SimpleCov::Formatter::HTMLFormatter,
-    Coveralls::SimpleCov::Formatter
-  ])
+  SimpleCov.formatter = SimpleCov::Formatter::HTMLFormatter
 end
