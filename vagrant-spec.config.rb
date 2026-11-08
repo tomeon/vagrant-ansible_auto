@@ -1,5 +1,15 @@
 # frozen_string_literal: true
 
+# vagrant-spec's Subprocess.execute forwards only positional arguments, so on
+# Ruby 3 the keyword options (notably :notify) are dropped and every command
+# fails with "A list of notify subscriptions must be given if a block is
+# given".  Forward the keywords explicitly until this is fixed upstream.
+Vagrant::Spec::Subprocess.singleton_class.prepend(Module.new do
+  def execute(command, *args, **options, &block)
+    new(command, *args, **options).execute(&block)
+  end
+end)
+
 Vagrant::Spec::Acceptance.configure do |config|
   config.component_paths << 'spec/acceptance'
   config.skeleton_paths << 'spec/acceptance/support-skeletons'
@@ -14,5 +24,5 @@ Vagrant::Spec::Acceptance.configure do |config|
   )
 end
 
-# Pull in SimpleCov, Coveralls, and RSpec setup
+# Pull in SimpleCov and RSpec setup
 require_relative 'spec/spec_helper'

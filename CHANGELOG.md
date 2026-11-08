@@ -14,6 +14,13 @@ IMPROVEMENTS:
   vagrant-spec, and move to RuboCop 1.x, SimpleCov 1.x, and newer versions of
   Rake and RSpec.  Development now requires Ruby 3.2 or later, the minimum for
   SimpleCov 1.x.
+- Replace Travis CI with GitHub Actions.  The test suite (RuboCop, unit tests,
+  and vagrant-spec acceptance tests) runs against the Ruby shipped by Ubuntu
+  24.04 LTS, Ubuntu 26.04 LTS, the latest Ubuntu interim release, Debian stable,
+  Debian testing, and AlmaLinux 10.  Coverage is uploaded to Coveralls by the
+  Coveralls GitHub Action, replacing the unmaintained `coveralls` gem.
+- Work around vagrant-spec dropping keyword arguments under Ruby 3, which made
+  every acceptance test fail.
 
 BUG FIXES:
 

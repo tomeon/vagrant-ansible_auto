@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+
+    # Each job runs in the distro's own container image and tests against the
+    # Ruby that distro ships.  The runner's Docker socket is mounted so that
+    # the vagrant-spec acceptance tests can use Vagrant's docker provider.
+    container:
+      image: ${{ matrix.image }}
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu 24.04 LTS
+            image: ubuntu:24.04
+            family: debian
+          - name: Ubuntu 26.04 LTS
+            image: ubuntu:26.04
+            family: debian
+            coverage: true
+          - name: Ubuntu (latest interim release)
+            image: ubuntu:rolling
+            family: debian
+          - name: Debian stable
+            image: debian:stable
+            family: debian
+          - name: Debian testing
+            image: debian:testing
+            family: debian
+          - name: AlmaLinux 10
+            image: almalinux:10
+            family: redhat
+
+    env:
+      LANG: C.UTF-8
+      BUNDLE_PATH: vendor/bundle
+      BUNDLE_JOBS: 4
+      BUNDLE_RETRY: 3
+      # Static Docker CLI used to talk to the runner's Docker daemon.
+      DOCKER_CLI_VERSION: 29.9.2
+
+    steps:
+      # Install git before checking out, so that actions/checkout produces a
+      # real git clone (the gemspec uses `git ls-files`).
+      - name: Install packages (Debian/Ubuntu)
+        if: matrix.family == 'debian'
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update -q
+          apt-get install -y -q --no-install-recommends \
+            build-essential ca-certificates curl git libarchive-tools \
+            openssh-client ruby ruby-bundler ruby-dev
+
+      - name: Install packages (RHEL family)
+        if: matrix.family == 'redhat'
+        run: |
+          dnf install -y \
+            bsdtar gcc git gzip make openssh-clients redhat-rpm-config \
+            ruby ruby-devel rubygem-bundler tar
+
+      - name: Install Docker CLI
+        run: |
+          curl -fsSL "https://download.docker.com/linux/static/stable/$(uname -m)/docker-${DOCKER_CLI_VERSION}.tgz" \
+            | tar -xz -C /usr/local/bin --strip-components=1 docker/docker
+          docker version
+
+      - uses: actions/checkout@v7
+
+      # The workspace is owned by the runner user, not root.
+      - name: Mark workspace as a safe git directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Show Ruby version
+        id: ruby
+        run: |
+          ruby -v
+          echo "version=$(ruby -e 'print RUBY_VERSION')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6
+        with:
+          path: vendor/bundle
+          key: bundle-${{ matrix.image }}-ruby${{ steps.ruby.outputs.version }}-${{ hashFiles('Gemfile.lock', '*.gemspec') }}
+          restore-keys: |
+            bundle-${{ matrix.image }}-ruby${{ steps.ruby.outputs.version }}-
+
+      - name: Install gems
+        run: bundle install
+
+      - name: Run RuboCop, unit tests, and acceptance tests
+        run: bundle exec rake
+
+      - name: Upload coverage to Coveralls
+        if: matrix.coverage
+        uses: coverallsapp/github-action@v2
+        with:
+          format: simplecov
+          file: coverage/.resultset.json
+          # Don't fail the build if Coveralls is unavailable or the
+          # repository isn't set up there.
+          fail-on-error: false
