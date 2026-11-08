@@ -149,9 +149,9 @@ module VagrantPlugins
 
       def handle_remote_file(to, opts = {})
         owner = opts.fetch(:owner) { machine.ssh_info[:username] }
-        mode = opts.fetch(:mode) { 0o600 }
+        mode = opts.fetch(:mode, 0o600)
         machine.communicate.tap do |comm|
-          # NOTE create_and_chown_remote_folder is defined in the parent class
+          # NOTE: create_and_chown_remote_folder is defined in the parent class
           create_and_chown_remote_folder(File.dirname(to))
 
           yield comm, to
@@ -269,6 +269,7 @@ module VagrantPlugins
 
         @config.include_inactive_machines.each do |pattern|
           next if pattern.is_a?(Regexp) || machine_names.include?(pattern.to_sym)
+
           machine.ui.warn I18n.t('vagrant.ansible_auto.provisioner.unknown_inactive_machine', machine_name: pattern)
         end
       end

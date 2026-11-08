@@ -34,7 +34,7 @@ describe VagrantPlugins::AnsibleAuto::Provisioner do
   let(:logger) { Log4r::Logger.new('vagrant::provisioners::ansible_auto::spec') }
 
   before do |example|
-    unless example.metadata.fetch(:skip_before) { false }
+    unless example.metadata.fetch(:skip_before, false)
       # Allows us to set expectations on the provisioner's @logger instance
       # variable
       log4r_logger_new_original = Log4r::Logger.method(:new)
@@ -73,7 +73,7 @@ describe VagrantPlugins::AnsibleAuto::Provisioner do
   end
 
   after do |example|
-    provisioner.provision unless example.metadata.fetch(:skip_after) { false }
+    provisioner.provision unless example.metadata.fetch(:skip_after, false)
   end
 
   describe '#provision' do

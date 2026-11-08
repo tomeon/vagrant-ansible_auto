@@ -23,9 +23,9 @@ module VagrantPlugins
 
           if subcommand_name.nil?
             @argv = ['-h'] if @argv.empty?
-            return parse_options(prepare_options)
+            parse_options(prepare_options)
           elsif subcommands.key? subcommand_name.to_sym
-            return subcommands.get(subcommand_name.to_sym).new(subcommand_argv, @env.dup).execute
+            subcommands.get(subcommand_name.to_sym).new(subcommand_argv, @env.dup).execute
           else
             raise Errors::UnrecognizedCommandError, command: subcommand_name
           end

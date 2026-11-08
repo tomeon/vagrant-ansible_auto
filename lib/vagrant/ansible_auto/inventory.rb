@@ -15,7 +15,7 @@ module VagrantPlugins
     class Inventory
       include VagrantPlugins::AnsibleAuto::Util::Config
 
-      UNNAMED_GROUP = '_'.freeze
+      UNNAMED_GROUP = '_'
 
       # @return [Hash{String=>Set<Host>}] group names mapped to their members
       def groups
@@ -290,6 +290,7 @@ module VagrantPlugins
       #   @yieldparam [String] each line in the INI document
       def with_ini_lines_hosts
         return enum_for(__method__) unless block_given?
+
         hosts.each { |host| yield host.to_ini }
       end
 
@@ -343,8 +344,8 @@ module VagrantPlugins
       def add_complex_group(group, group_spec = {})
         group_spec = Util::HashWithIndifferentAccess.new(group_spec)
         vars_for(group, group_spec['vars']) if group_spec.key? 'vars'
-        children_of(group, *(group_spec['children'])) if group_spec.key? 'children'
-        add_group(group, *(group_spec['hosts'])) if group_spec.key? 'hosts'
+        children_of(group, *group_spec['children']) if group_spec.key? 'children'
+        add_group(group, *group_spec['hosts']) if group_spec.key? 'hosts'
       end
     end
   end

@@ -70,7 +70,7 @@ module VagrantPlugins
         @include_inactive_machines          = false                               if @include_inactive_machines           == UNSET_VALUE
         @include_inactive_machines          = Array(@include_inactive_machines)   unless bool? @include_inactive_machines
 
-        # NOTE @limit is defined in core Vagrant's Ansible config.
+        # NOTE: @limit is defined in core Vagrant's Ansible config.
         @limit = '*' if @limit == UNSET_VALUE
       rescue Errors::InventoryError => e
         @__errors << e.message

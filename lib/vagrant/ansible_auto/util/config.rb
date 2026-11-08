@@ -25,6 +25,7 @@ module VagrantPlugins
         def int?(o)
           coerced_int = int!(o)
           return false if coerced_int.nil?
+
           float!(coerced_int) == float!(o)
         end
 

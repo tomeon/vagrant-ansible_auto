@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'vagrant'
 require Vagrant.source_root.join('test/unit/support/dummy_communicator')
 require 'vagrant-spec/unit'
@@ -76,7 +78,7 @@ shared_context 'machine' do |machine_count = 2|
   before do |example|
     # Ensure that we always create the Vagrant::Environment, unless explicitly
     # told not to
-    iso_env unless example.metadata.fetch(:skip_create_vagrant_env) { false }
+    iso_env unless example.metadata.fetch(:skip_create_vagrant_env, false)
   end
 end
 

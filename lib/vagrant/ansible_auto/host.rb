@@ -84,6 +84,7 @@ module VagrantPlugins
       # @return [Hash] the new hostvars
       def hostvars=(hostvars)
         raise ArgumentError, 'hostvars must be a hash' unless hostvars.is_a? Hash
+
         @hostvars = Util::HashWithIndifferentAccess.new(hostvars)
       end
 
