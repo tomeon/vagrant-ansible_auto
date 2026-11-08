@@ -18,9 +18,11 @@ SimpleCov::Formatter::SilentHTMLFormatter = Class.new(SimpleCov::Formatter::HTML
 end
 
 SimpleCov.configure do
-  add_group     'Sources', 'lib'
-  add_group     'Tests', 'spec'
-  add_filter    'Vagrantfile*'
+  # SimpleCov 1.x skips spec/ by default; keep reporting on it as before.
+  remove_filter %r{\A(test|features|spec|autotest)/}
+  group         'Sources', 'lib'
+  group         'Tests', 'spec'
+  skip          'Vagrantfile*'
   root          VagrantPlugins::AnsibleAuto.source_root.to_s
   coverage_dir  VagrantPlugins::AnsibleAuto.source_root.join('coverage').to_s
 end

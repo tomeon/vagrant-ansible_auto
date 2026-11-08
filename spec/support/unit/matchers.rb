@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rspec'
 
 # We're using an older version of rspec-expectations that doesn't have the

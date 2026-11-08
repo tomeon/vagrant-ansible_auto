@@ -13,7 +13,7 @@ module VagrantPlugins
 
         # @return [String] the contents of the Vagrant insecure private key
         def insecure_key_contents
-          @__insecure_key_contents ||= insecure_key_path.read.chomp
+          @__insecure_key_contents ||= insecure_key_path.read.chomp # rubocop:disable Naming/MemoizedInstanceVariableName
         end
 
         # @param [String] path path to a file
@@ -22,6 +22,7 @@ module VagrantPlugins
         #   {VagrantPlugins::CommunicatorSSH::Communicator#insecure_key?}
         def insecure_key?(path)
           return false if path.nil? || !File.file?(path)
+
           File.read(path).chomp == insecure_key_contents
         end
 
