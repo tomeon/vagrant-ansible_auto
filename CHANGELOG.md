@@ -9,6 +9,11 @@ FEATURES:
 
 IMPROVEMENTS:
 
+- Update development dependencies so that the unit tests and RuboCop run on
+  current Ruby releases: test against Vagrant 2.4.9 and the latest
+  vagrant-spec, and move to RuboCop 1.x and newer versions of Rake, RSpec, and
+  SimpleCov.
+
 BUG FIXES:
 
 ## 0.2.4 (August 07, 2020)

@@ -2,10 +2,17 @@
 #  - https://gist.githubusercontent.com/infertux/cdd2ccc6e0a0cd94f458/raw
 
 AllCops:
+  # Vagrant 2.2 bundles Ruby 2.x, so avoid suggesting newer syntax.
+  TargetRubyVersion: 2.4
+  NewCops: disable
+  SuggestExtensions: false
+  # Only lint the library and its specs.
+  Include:
+    - 'lib/**/*.rb'
+    - 'spec/**/*.rb'
   Exclude:
     - '**/Vagrantfile*'
     - 'vendor/**/*'
-    - !ruby/regexp '/\\A(?!(?:lib|spec)\\/)/'
 
 Naming/FileName:
   Exclude:
@@ -28,7 +35,7 @@ Metrics/AbcSize:
 Metrics/CyclomaticComplexity:
   Enabled: false
 
-Metrics/LineLength:
+Layout/LineLength:
   Enabled: false
 
 Metrics/PerceivedComplexity:
@@ -46,3 +53,26 @@ Metrics/ClassLength:
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*.rb'
+
+# The specs align hash values in padded columns, which neither the `key` nor the
+# `table` style permits.
+Layout/HashAlignment:
+  Enabled: false
+
+# Short names like `o`, `a`, and `b` are used for generic arguments.
+Naming/MethodParameterName:
+  MinNameLength: 1
+
+# Prefer explicit `yield` in iterators.
+Style/ExplicitBlockArgument:
+  Enabled: false
+
+# With Layout/LineLength disabled, this cop would turn long multiline
+# conditionals into very long single lines.
+Style/IfUnlessModifier:
+  Enabled: false
+
+# Only flag concatenation onto string literals; `Pathname#+` is not string
+# concatenation.
+Style/StringConcatenation:
+  Mode: conservative

@@ -26,9 +26,9 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'bundler', '~> 2.0'
   spec.add_development_dependency 'cane'
   spec.add_development_dependency 'coveralls'
-  spec.add_development_dependency 'rake', '~> 10.0'
-  spec.add_development_dependency 'rspec', '~> 3.5.0'
-  spec.add_development_dependency 'rubocop', '~> 0.50.0'
-  spec.add_development_dependency 'simplecov'
+  spec.add_development_dependency 'rake', '>= 10.0'
+  spec.add_development_dependency 'rspec', '~> 3.5'
+  spec.add_development_dependency 'rubocop', '~> 1.0'
+  spec.add_development_dependency 'simplecov', '< 1.0'
   spec.add_development_dependency 'yard'
 end
