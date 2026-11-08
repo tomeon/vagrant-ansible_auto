@@ -11,8 +11,9 @@ IMPROVEMENTS:
 
 - Update development dependencies so that the unit tests and RuboCop run on
   current Ruby releases: test against Vagrant 2.4.9 and the latest
-  vagrant-spec, and move to RuboCop 1.x and newer versions of Rake, RSpec, and
-  SimpleCov.
+  vagrant-spec, and move to RuboCop 1.x, SimpleCov 1.x, and newer versions of
+  Rake and RSpec.  Development now requires Ruby 3.2 or later, the minimum for
+  SimpleCov 1.x.
 
 BUG FIXES:
 

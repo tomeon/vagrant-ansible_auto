@@ -30,5 +30,5 @@ if type == 'unit'
   ENV['VAGRANT_NO_PLUGINS'] = 'yes'
 
   require 'simplecov'
-  SimpleCov.start unless SimpleCov.running
+  SimpleCov.start unless SimpleCov.coverage_running?
 end
