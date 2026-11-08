@@ -148,6 +148,9 @@ module VagrantPlugins
 
     private
 
+      # @param [Object] o a value for {#include_inactive_machines}
+      # @return [Boolean] whether +o+ is +true+, +false+, or a list of machine
+      #   names and/or regular expressions
       def machine_patterns?(o)
         bool?(o) || (o.is_a?(Array) && o.all? { |e| MACHINE_PATTERN.any? { |type| e.is_a? type } })
       end

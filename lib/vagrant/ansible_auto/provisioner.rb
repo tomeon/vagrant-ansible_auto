@@ -264,6 +264,12 @@ module VagrantPlugins
         end
       end
 
+      # Warn about machine names in +include_inactive_machines+ that are not
+      # defined in the Vagrantfile, as these are likely typos.  Regular
+      # expressions are not checked.
+      # @param [Array<Symbol>] machine_names the names of the machines defined
+      #   in the Vagrantfile
+      # @return [void]
       def warn_unknown_inactive_machines(machine_names)
         return unless @config.include_inactive_machines.is_a? Array
 
